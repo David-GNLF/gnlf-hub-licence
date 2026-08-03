@@ -121,12 +121,17 @@ class LicenceHub
      *    'periode' => 'mensuel'|'trimestriel'|'annuel',
      *    'limites' => ?array, 'actif' => bool]
      *
-     * ON PUBLIE TOUJOURS ; C'EST LE HUB QUI ARBITRE. Ne pas se censurer ici
-     * d'après un indice local — le type de secret, le mode edge : c'est
-     * précisément ce qui a fait taire deux serveurs centraux le 03/08/2026,
-     * chacun croyant à tort n'être qu'un boîtier client. Le droit de publier
-     * est porté par le contrat côté Hub (`publie_le_catalogue`), qui seul sait
-     * quel déploiement parle au nom du produit.
+     * ON PUBLIE TOUJOURS ; C'EST LE HUB QUI ARBITRE. Ne pas déduire son rôle
+     * du TYPE DE SECRET dont on dispose : c'est précisément ce qui a fait
+     * taire deux serveurs centraux le 03/08/2026, chacun croyant à tort n'être
+     * qu'un boîtier client. Le droit de publier est porté par le contrat côté
+     * Hub (`publie_le_catalogue`), qui seul sait quel déploiement parle au nom
+     * du produit.
+     *
+     * Filtrer sur la PROVENANCE de la donnée reste légitime — un boîtier edge
+     * détient une réplique du catalogue de son central et n'a pas à la
+     * republier. La distinction : « d'où vient cette donnée ? » se répond
+     * localement, « ai-je le droit de parler ? » non.
      *
      * Best-effort strict : absence de classe, table absente, erreur → [] et le
      * ping continue. Un catalogue indisponible ne doit jamais coûter une

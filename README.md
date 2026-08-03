@@ -67,13 +67,19 @@ Les deux sont **facultatifs** et tolérants : classe absente, table absente,
 exception → la donnée n'est pas rapportée et le ping continue. Ni un inventaire
 ni un catalogue ne doivent jamais coûter une licence.
 
-### Le catalogue ne se censure pas
+### Ne déduisez jamais votre rôle d'un indice local
 
-Ne filtrez rien ici d'après un indice local — type de secret, mode edge. C'est
+Ne filtrez pas d'après le **type de secret** dont vous disposez. C'est
 exactement ce qui a fait taire deux serveurs centraux, chacun se croyant à tort
-un simple boîtier client. **L'instance publie, le Hub arbitre** : le droit de
-publier est porté par le contrat côté Hub (`abonnements.publie_le_catalogue`),
-qui seul sait quel déploiement parle au nom du produit.
+un simple boîtier client parce qu'il s'authentifiait par secret d'instance.
+**L'instance publie, le Hub arbitre** : le droit de publier est porté par le
+contrat côté Hub (`abonnements.publie_le_catalogue`), qui seul sait quel
+déploiement parle au nom du produit.
+
+En revanche, filtrer sur la **provenance de la donnée** est légitime : un
+boîtier edge détient une réplique du catalogue de son central, la republier
+ferait remonter deux fois la même chose. La distinction tient à ceci — « d'où
+vient cette donnée ? » se répond localement, « ai-je le droit de parler ? » non.
 
 ## Clés de service
 
