@@ -1,0 +1,22 @@
+{
+    "name": "gnlf/hub-licence",
+    "description": "Client d'activation Hub GNLF Consult — licence signée, ordres, clés de service. Partagé par les applications Laravel de la flotte.",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "ext-openssl": "*",
+        "illuminate/support": "^10.0 || ^11.0 || ^12.0",
+        "illuminate/http": "^10.0 || ^11.0 || ^12.0",
+        "illuminate/console": "^10.0 || ^11.0 || ^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gnlf\\HubLicence\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "config": {
+        "sort-packages": true
+    }
+}
