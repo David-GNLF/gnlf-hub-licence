@@ -62,6 +62,24 @@ surcharge de méthode** : une surcharge, c'est une dérive qui recommence.
 |---|---|---|
 | `hub_licence.inventaire` | parc géré par l'instance | `__invoke(): ['institutions' => ?int, 'centres' => ?int]` |
 | `hub_licence.catalogue` | tarifs à refléter au Hub | `__invoke(): array` de `['code', 'nom', 'prix', 'periode', 'limites'?, 'actif'?]` |
+| `hub_licence.adresse` | adresse rapportée au Hub | chaîne ; **facultative** — sans elle, `app.url` est rapportée |
+
+### L'adresse rapportée (`app_url`)
+
+Le ping joint l'adresse sous laquelle l'instance se sert, pour que le Hub sache
+de quel serveur il parle quand un client en porte plusieurs. Il ne peut pas la
+deviner : il ne voit que l'IP sortante du réseau, qui n'est pas une porte
+d'entrée.
+
+Par défaut c'est `config('app.url')`. Renseignez `hub_licence.adresse`
+**seulement** quand l'adresse par laquelle on atteint réellement l'application
+diffère de son APP_URL : domaine public devant un nom interne, proxy inverse,
+port publié différent.
+
+Les adresses de boucle locale (`localhost`, `127.0.0.1`, `::1`, `0.0.0.0`) ne
+sont **jamais** rapportées : vraies pour l'instance, inutiles pour tout le
+monde, elles rempliraient la colonne du Hub de « localhost » sur toute la
+flotte — pire que vide, parce que ça se lit comme une information.
 
 Les deux sont **facultatifs** et tolérants : classe absente, table absente,
 exception → la donnée n'est pas rapportée et le ping continue. Ni un inventaire
