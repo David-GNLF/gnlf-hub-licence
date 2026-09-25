@@ -195,6 +195,13 @@ class LicenceHub
                     'client_ref'          => config('hub_licence.client_ref'),
                     'jti'                 => $etatLocal['jti'] ?? null,
                     'version'             => self::version(),
+                    // Où cette instance se sert elle-même : son APP_URL, ou
+                    // l'adresse publique déclarée si elle en a une (voir
+                    // adresse()). Le Hub ne peut PAS la deviner — il ne voit
+                    // que l'IP sortante du réseau, qui n'est pas une porte
+                    // d'entrée. Seule l'instance connaît son adresse ; elle la
+                    // dit, comme elle dit sa version.
+                    'app_url'             => self::adresse(),
                     'utilisateurs_actifs' => self::utilisateursActifs(),
                     'sante'               => self::sante(),
                     // Inventaire du parc géré par CETTE instance : nombre
@@ -702,6 +709,42 @@ class LicenceHub
         } catch (\Throwable $e) {
             Log::warning('LicenceHub : état local non persistable', ['e' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Adresse sous laquelle cette instance se sert — rapportée au Hub pour
+     * qu'on sache de quel serveur on parle quand un même client en porte
+     * plusieurs.
+     *
+     * `hub_licence.adresse` prime sur `app.url` : l'APP_URL décrit ce que
+     * l'application croit être, ce qui n'est pas toujours l'adresse par
+     * laquelle on l'atteint (proxy inverse, domaine public devant un nom
+     * interne, port publié différent).
+     *
+     * LES ADRESSES DE BOUCLE LOCALE SONT ÉCARTÉES, et c'est le cœur de cette
+     * méthode : `http://localhost` est vrai pour l'instance et inutile pour
+     * tout le monde. Rapportée, elle remplirait la colonne « Adresse » du Hub
+     * de « localhost » sur toute la flotte — pire que vide, parce que ça se
+     * lit comme une information.
+     */
+    protected static function adresse(): ?string
+    {
+        $adresse = trim((string) (config('hub_licence.adresse') ?: config('app.url')));
+
+        if ($adresse === '') {
+            return null;
+        }
+
+        $adresse = rtrim($adresse, '/');
+        $hote    = strtolower((string) (parse_url($adresse, PHP_URL_HOST) ?: $adresse));
+
+        if (in_array($hote, ['localhost', '127.0.0.1', '::1', '0.0.0.0'], true)) {
+            return null;
+        }
+
+        // Le Hub borne ce champ à 255 caractères : au-delà, la validation
+        // rejetterait le ping ENTIER — une licence perdue pour une étiquette.
+        return mb_substr($adresse, 0, 255);
     }
 
     protected static function version(): ?string
