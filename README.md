@@ -122,3 +122,31 @@ pendant des heures sans que rien ne le montre. C'est arrivé.
 la machine dispose : un Hub compromis ne peut pas faire exécuter ici une action
 absente de cette liste, laquelle ne contient par construction rien de
 destructif.
+
+## La charte graphique GNLF (depuis la 1.1.0)
+
+Le Hub publie la charte graphique : jetons CSS/JSON, logos SVG et favicons. La commande suivante la récupère :
+
+```bash
+php artisan charte:synchroniser          # --forcer pour tout retélécharger
+```
+
+- **Où arrivent les fichiers** : dans `public/charte/`. L'application les sert donc sous `/charte/jetons/gnlf-tokens.css`, `/charte/logos/svg/gnlf-logo.svg`, etc.
+- **Quand l'appeler** : au démarrage du conteneur, puis une fois par jour (planificateur). Elle rend toujours 0 : un Hub injoignable n'empêche jamais l'application de démarrer, et les fichiers déjà en place restent servis.
+- **Authentification** : identique à celle du ping. Le secret d'instance (kit) est essayé en premier, puis le secret produit. L'en-tête `X-Application` vaut le code produit, à une exception près : `creditmanager` devient `digicredit`.
+- **Configuration facultative**, dans `config/hub_licence.php` :
+
+```php
+'charte' => [
+    'dossier'     => public_path('charte'),               // où écrire
+    'application' => env('HUB_CHARTE_APPLICATION'),       // si le code diffère
+    'cle'         => env('HUB_CHARTE_CLE'),               // clé dédiée (X-Charte-Cle)
+    'timeout'     => 20,
+],
+```
+
+**Sûreté.**
+- Seuls les chemins `jetons/`, `logos/svg/` et `logos/png/` sont écrits, avec des noms simples.
+- Chaque fichier passe par un fichier temporaire avant d'être renommé : aucun fichier à moitié écrit n'est jamais servi.
+- Un fichier retiré de la version est supprimé.
+- La version installée est notée dans `storage/app/charte_gnlf.json` ; l'appel quotidien n'envoie que son empreinte.

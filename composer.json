@@ -18,5 +18,12 @@
     "minimum-stability": "stable",
     "config": {
         "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Gnlf\\HubLicence\\HubLicenceServiceProvider"
+            ]
+        }
     }
 }
