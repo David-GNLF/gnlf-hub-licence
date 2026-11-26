@@ -278,6 +278,13 @@ class LicenceHub
             'cles_service'      => is_array($corps['cles_service'] ?? null)
                 ? self::chiffrerCles($corps['cles_service'])
                 : ($etatLocal['cles_service'] ?? null),
+            // Réglages de l'invitation « Donnez votre avis » (1.2.0). Un
+            // tableau reçu fait autorité ; absent ou null (Hub plus ancien,
+            // lecture en échec là-bas) : on garde la dernière valeur connue.
+            // Voir docs/AVIS_UTILISATEURS_CONTRAT.md du Hub.
+            'avis'              => is_array($corps['avis'] ?? null)
+                ? $corps['avis']
+                : ($etatLocal['avis'] ?? null),
         ];
 
         // Le ping a emporté les comptes rendus en attente : le Hub les a reçus.
@@ -293,6 +300,89 @@ class LicenceHub
         }
 
         return $etatLocal;
+    }
+
+    // ── Avis des utilisateurs (1.2.0) ────────────────────────────────────
+    //
+    // Contrat : docs/AVIS_UTILISATEURS_CONTRAT.md du Hub. Le paquet ne fait que
+    // le transport : lire les réglages servis au ping, envoyer un lot d'avis.
+    // L'invitation, la file locale et la fréquence par utilisateur restent
+    // dans l'application.
+
+    /**
+     * Réglages de l'invitation servis par le dernier ping réussi, ou null si
+     * le Hub n'en a jamais servi. null ou « actif » faux : ne rien afficher.
+     *
+     * @return array{actif:bool, delai_jours:int, intervalle_mois:int, report_jours:int, pause_mois:int}|null
+     */
+    public static function reglagesAvis(): ?array
+    {
+        $avis = self::lireEtatLocal()['avis'] ?? null;
+
+        if (! is_array($avis)) {
+            return null;
+        }
+
+        $entier = fn (string $cle, int $defaut, int $min, int $max): int
+            => max($min, min($max, (int) ($avis[$cle] ?? $defaut)));
+
+        return [
+            'actif'           => (bool) ($avis['actif'] ?? false),
+            'delai_jours'     => $entier('delai_jours', 14, 1, 365),
+            'intervalle_mois' => $entier('intervalle_mois', 6, 1, 36),
+            'report_jours'    => $entier('report_jours', 30, 1, 365),
+            'pause_mois'      => $entier('pause_mois', 12, 1, 60),
+        ];
+    }
+
+    /**
+     * Envoie au Hub un lot d'avis (20 au plus), avec l'authentification du
+     * ping. Chaque avis : uuid, note, commentaire?, consentement
+     * (nom|anonyme|non), prenom? (seulement si nom), langue?, version_appli?,
+     * donne_le?.
+     *
+     * Retourne ['statut' => code HTTP, 'recus' => [uuid…], 'doublons' => [uuid…]],
+     * ou null si le réseau n'a pas répondu. L'application marque envoyés les
+     * uuid de recus ET de doublons, et réessaie le reste plus tard.
+     *
+     * @param  list<array<string,mixed>>  $avis
+     * @return array{statut:int, recus:list<string>, doublons:list<string>}|null
+     */
+    public static function envoyerAvis(array $avis, ?string $institution = null): ?array
+    {
+        $avis = array_values(array_slice($avis, 0, 20));
+
+        if ($avis === []) {
+            return ['statut' => 200, 'recus' => [], 'doublons' => []];
+        }
+
+        try {
+            $reponse = Http::timeout((int) config('hub_licence.timeout', 6))
+                ->withHeaders(self::enteteAuthentification())
+                ->acceptJson()
+                ->post(rtrim((string) config('hub_licence.url'), '/') . '/api/v1/avis', array_filter([
+                    'produit'     => config('hub_licence.produit'),
+                    'client_ref'  => config('hub_licence.client_ref'),
+                    'institution' => $institution,
+                    'avis'        => $avis,
+                ], fn ($v) => $v !== null));
+        } catch (\Throwable $e) {
+            Log::warning('LicenceHub : avis non remontés', ['e' => $e->getMessage()]);
+
+            return null;
+        }
+
+        $corps = $reponse->ok() ? (array) $reponse->json() : [];
+
+        if (! $reponse->ok()) {
+            Log::warning('LicenceHub : avis refusés par le Hub', ['statut' => $reponse->status()]);
+        }
+
+        return [
+            'statut'   => $reponse->status(),
+            'recus'    => array_values(array_map('strval', (array) ($corps['recus'] ?? []))),
+            'doublons' => array_values(array_map('strval', (array) ($corps['doublons'] ?? []))),
+        ];
     }
 
     // ── Ordres reçus du Hub ──────────────────────────────────────────────
