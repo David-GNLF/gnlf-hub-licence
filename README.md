@@ -150,3 +150,19 @@ php artisan charte:synchroniser          # --forcer pour tout retélécharger
 - Chaque fichier passe par un fichier temporaire avant d'être renommé : aucun fichier à moitié écrit n'est jamais servi.
 - Un fichier retiré de la version est supprimé.
 - La version installée est notée dans `storage/app/charte_gnlf.json` ; l'appel quotidien n'envoie que son empreinte.
+
+## Avis des utilisateurs (depuis la 1.2.0)
+
+Le Hub sert au ping, sous la clé `avis`, les réglages de l'invitation « Donnez votre avis » : actif, délai avant la première invitation, intervalle entre deux invitations, report, pause. Le contrat complet est dans `docs/AVIS_UTILISATEURS_CONTRAT.md` du Hub.
+
+```php
+$reglages = \App\Hub\LicenceHub::reglagesAvis();   // null ou ['actif' => false, …] : ne rien afficher
+
+$reponse = \App\Hub\LicenceHub::envoyerAvis($lot, $codeInstitution);  // lot de 20 au plus
+// null = réseau coupé ; sinon ['statut' => 200, 'recus' => [...], 'doublons' => [...]]
+```
+
+Le paquet ne fait que le transport. L'invitation, la file locale des avis et la fréquence par utilisateur restent dans l'application.
+Seul le **prénom** est envoyé, et seulement si `consentement = nom`.
+
+Pour rester compatibles avec la 1.1, les applications appellent ces méthodes derrière `method_exists()`.
